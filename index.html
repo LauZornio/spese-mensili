@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#176b4d">
+<title>I miei scontrini</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18231e;background:#f4f7f5}
+*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{background:#176b4d;color:white;padding:24px 18px 22px;border-radius:0 0 22px 22px}
+h1{font-size:25px;margin:0 0 5px}header p{margin:0;opacity:.9;font-size:14px}
+main{max-width:680px;margin:auto;padding:16px;display:grid;gap:15px}
+.card{background:white;border-radius:18px;padding:17px;box-shadow:0 2px 10px #183b2c0c}
+h2{font-size:17px;margin:0 0 14px}
+label{display:block;font-size:13px;font-weight:650;margin:12px 0 6px;color:#46534c}
+input,select,button{font:inherit}input,select{width:100%;border:1px solid #d8e1dc;border-radius:11px;padding:12px;background:white;color:#18231e;font-size:16px}
+button{border:0;border-radius:12px;padding:13px 15px;font-weight:700;cursor:pointer}
+.primary{background:#176b4d;color:white;width:100%;margin-top:15px}
+.secondary{background:#e8f2ed;color:#176b4d}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{padding:13px;border-radius:13px;background:#f2f6f3}
+.metric small{display:block;color:#64736a;font-size:12px;margin-bottom:6px}
+.metric strong{font-size:22px;letter-spacing:-.4px}
+.metric.wide{grid-column:1/-1;background:#eaf4ee}
+.subtle{color:#68766e;font-size:12px;line-height:1.5}
+.calc{margin-top:12px;padding:12px;background:#f5f8f6;border-radius:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.calc strong{font-size:19px}
+.entry{border-top:1px solid #edf1ee;padding:12px 0;display:flex;gap:10px;align-items:flex-start}
+.entry:first-child{border-top:0}
+.entry-main{flex:1;min-width:0}
+.entry-title{font-weight:700}
+.entry-meta{font-size:12px;color:#6a786f;margin-top:4px;line-height:1.5}
+.entry-amount{text-align:right;font-weight:700;white-space:nowrap}
+.del{padding:7px 9px;background:#fff0ef;color:#a3322a;margin-top:7px;font-size:12px}
+.row{display:flex;gap:9px;align-items:end}.row>div{flex:1}
+.empty{color:#758078;font-size:14px;padding:8px 0}
+
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.compare-head{font-size:12px;color:#617067;margin-bottom:5px}
+.compare-month{font-weight:750;font-size:14px;margin-bottom:9px}
+.compare-cell{padding:12px;background:#f2f6f3;border-radius:12px;min-width:0}
+.compare-cell small{display:block;color:#66756c;font-size:12px;margin-bottom:6px}
+.compare-cell strong{font-size:17px;display:block;overflow-wrap:anywhere}
+.compare-diff{margin-top:10px;padding:12px;border-radius:12px;background:#eaf4ee}
+.compare-diff-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:13px}
+.positive{color:#b42318}.negative{color:#176b4d}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.actions button{font-size:13px}
+@media(min-width:560px){main{grid-template-columns:1fr 1fr}.stats{grid-column:1/-1}.history{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧾 I miei scontrini</h1>
+  <p>La tua spesa, i buoni pasto e quanto paghi in euro.</p>
+</header>
+<main>
+  <section class="card">
+    <h2>Aggiungi uno scontrino</h2>
+    <label for="date">Data</label><input id="date" type="date">
+    <label for="shop">Negozio (facoltativo)</label><input id="shop" type="text" placeholder="Es. supermercato">
+    <label for="total">Totale scontrino (€)</label><input id="total" type="number" min="0" step="0.01" placeholder="123,00" inputmode="decimal">
+    <label for="vouchers">Buoni pasto utilizzati (€)</label><input id="vouchers" type="number" min="0" step="0.01" value="0" inputmode="decimal">
+    <div class="calc"><span>Pagato in contanti/carta</span><strong id="remaining">€ 0,00</strong></div>
+    <p class="subtle">L'importo pagato viene calcolato automaticamente: totale scontrino meno buoni pasto.</p>
+    <button class="primary" id="add">Salva scontrino</button>
+    <p class="subtle" id="message" role="status"></p>
+  </section>
+  <section class="card stats">
+    <h2>Statistiche mensili</h2>
+    <label for="month">Mese da visualizzare</label><input id="month" type="month">
+    <div class="metrics" style="margin-top:12px">
+      <div class="metric"><small>Totale scontrini</small><strong id="mTotal">€ 0,00</strong></div>
+      <div class="metric"><small>Buoni utilizzati</small><strong id="mVouchers">€ 0,00</strong></div>
+      <div class="metric wide"><small>Pagato in euro (contanti/carta)</small><strong id="mCash">€ 0,00</strong></div>
+      <div class="metric"><small>Numero scontrini</small><strong id="mCount">0</strong></div>
+      <div class="metric"><small>Media per scontrino</small><strong id="mAvg">€ 0,00</strong></div>
+    </div>
+  </section>
+
+  <section class="card compare">
+    <h2>Confronta due mesi</h2>
+    <p class="subtle">Scegli due mesi qualsiasi, anche di anni diversi, per confrontare spesa, buoni pasto e importo pagato in euro.</p>
+    <div class="row">
+      <div><label for="monthA">Primo mese</label><input id="monthA" type="month"></div>
+      <div><label for="monthB">Secondo mese</label><input id="monthB" type="month"></div>
+    </div>
+    <div id="comparison" style="margin-top:14px"></div>
+  </section>
+  <section class="card history">
+    <h2>Storico scontrini</h2>
+    <div id="entries" class="empty">Non hai ancora registrato scontrini.</div>
+    <div class="actions">
+      <button class="secondary" id="export">Esporta CSV</button>
+      <button class="secondary" id="backup">Scarica backup</button>
+      <button class="secondary" id="restoreBtn">Ripristina backup</button>
+      <input id="restore" type="file" accept="application/json,.json" hidden>
+    </div>
+    <p class="subtle">I dati vengono salvati in questo browser sul dispositivo. Esporta periodicamente un backup per non rischiare di perderli.</p>
+  </section>
+</main>
+<script>
+(() => {
+ const $ = id => document.getElementById(id);
+ const key = 'mieiScontrini.v1';
+ const fmt = n => new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n || 0);
+ const today = new Date();
+ const isoDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+ $('date').value = isoDate(today);
+ $('month').value = isoDate(today).slice(0,7);
+ let records = [];
+ try { records = JSON.parse(localStorage.getItem(key) || '[]'); if (!Array.isArray(records)) records=[]; } catch(e){ records=[]; }
+ const save = () => localStorage.setItem(key, JSON.stringify(records));
+ const amount = id => Math.round((Number($(id).value) || 0)*100)/100;
+ const remaining = () => Math.round((amount('total')-amount('vouchers'))*100)/100;
+ function updateRemaining(){
+   const rem=remaining();
+   $('remaining').textContent=fmt(Math.max(0,rem));
+   $('remaining').style.color=rem<0?'#b42318':'#18231e';
+ }
+ $('total').addEventListener('input',updateRemaining);
+ $('vouchers').addEventListener('input',updateRemaining);
+ function render(){
+   const month=$('month').value;
+   const list=records.filter(r=>r.date.slice(0,7)===month).sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created);
+   const sum=field=>list.reduce((s,r)=>s+r[field],0);
+   const total=sum('total'), vouchers=sum('vouchers'), cash=sum('cash');
+   $('mTotal').textContent=fmt(total);
+   $('mVouchers').textContent=fmt(vouchers);
+   $('mCash').textContent=fmt(cash);
+   $('mCount').textContent=String(list.length);
+   $('mAvg').textContent=fmt(list.length ? total/list.length : 0);
+   const container=$('entries');
+   if(!list.length){container.className='empty';container.textContent='Nessuno scontrino per questo mese.';return;}
+   container.className='';
+   container.replaceChildren();
+   list.forEach(r=>{
+     const el=document.createElement('div');el.className='entry';
+     const main=document.createElement('div');main.className='entry-main';
+     const title=document.createElement('div');title.className='entry-title';title.textContent=r.shop || 'Scontrino';
+     const meta=document.createElement('div');meta.className='entry-meta';
+     meta.textContent=`${r.date} · Buoni: ${fmt(r.vouchers)} · Pagato in euro: ${fmt(r.cash)}`;
+     main.append(title,meta);
+     const right=document.createElement('div');right.className='entry-amount';right.textContent=fmt(r.total);
+     const del=document.createElement('button');del.className='del';del.textContent='Elimina';del.setAttribute('aria-label','Elimina scontrino');
+     del.addEventListener('click',()=>{if(confirm('Vuoi eliminare questo scontrino?')){records=records.filter(x=>x.id!==r.id);save();render();}});
+     right.appendChild(del);el.append(main,right);container.appendChild(el);
+   });
+ }
+
+ function monthTotals(month){
+   const list=records.filter(r=>r.date.slice(0,7)===month);
+   const total=list.reduce((s,r)=>s+r.total,0);
+   const vouchers=list.reduce((s,r)=>s+r.vouchers,0);
+   const cash=list.reduce((s,r)=>s+r.cash,0);
+   return {total,vouchers,cash,count:list.length};
+ }
+ function monthLabel(month){
+   if(!month)return 'Seleziona un mese';
+   const [y,m]=month.split('-').map(Number);
+   return new Date(y,m-1,1).toLocaleDateString('it-IT',{month:'long',year:'numeric'});
+ }
+ function diffText(a,b){
+   const d=Math.round((b-a)*100)/100;
+   const pct=a===0?(b===0?0:null):(d/Math.abs(a))*100;
+   const sign=d>0?'+':'';
+   const pctText=pct===null?'—':`${pct>0?'+':''}${pct.toLocaleString('it-IT',{maximumFractionDigits:1,minimumFractionDigits:1})}%`;
+   const cls=d>0?'positive':(d<0?'negative':'');
+   return `<span class="${cls}">${sign}${fmt(d)} <span style="font-weight:500">(${pctText})</span></span>`;
+ }
+ function renderComparison(){
+   const aMonth=$('monthA').value, bMonth=$('monthB').value;
+   if(!aMonth||!bMonth){$('comparison').textContent='Scegli entrambi i mesi.';return;}
+   const a=monthTotals(aMonth), b=monthTotals(bMonth);
+   const rows=[
+     ['Totale scontrini','total'],
+     ['Buoni pasto','vouchers'],
+     ['Pagato in euro','cash']
+   ];
+   let out=`<div class="compare-grid">
+     <div class="compare-head">PRIMO MESE</div><div class="compare-head">SECONDO MESE</div>
+     <div class="compare-month">${monthLabel(aMonth)}</div><div class="compare-month">${monthLabel(bMonth)}</div>`;
+   rows.forEach(([label,key])=>{
+     out+=`<div class="compare-cell"><small>${label}</small><strong>${fmt(a[key])}</strong></div>
+           <div class="compare-cell"><small>${label}</small><strong>${fmt(b[key])}</strong></div>`;
+   });
+   out+='</div><div class="compare-diff"><strong>Differenza: secondo mese rispetto al primo</strong>';
+   rows.forEach(([label,key])=>{
+     out+=`<div class="compare-diff-row"><span>${label}</span><strong>${diffText(a[key],b[key])}</strong></div>`;
+   });
+   out+=`<div class="compare-diff-row"><span>Numero scontrini</span><strong>${b.count-a.count>0?'+':''}${b.count-a.count}</strong></div></div>`;
+   $('comparison').innerHTML=out;
+ }
+ $('monthA').value=$('month').value;
+ $('monthB').value=$('month').value;
+ $('monthA').addEventListener('change',renderComparison);
+ $('monthB').addEventListener('change',renderComparison);
+
+ $('month').addEventListener('change',()=>{render(); if($('monthB').value===$('monthA').value)$('monthB').value=$('month').value; renderComparison();});
+ $('add').addEventListener('click',()=>{
+   const date=$('date').value, total=amount('total'), vouchers=amount('vouchers'), shop=$('shop').value.trim();
+   if(!date){$('message').textContent='Inserisci la data dello scontrino.';return;}
+   if($('total').value===''||total<0){$('message').textContent='Inserisci un totale valido.';return;}
+   if(vouchers<0||vouchers>total){$('message').textContent='I buoni non possono superare il totale dello scontrino.';return;}
+   const cash=Math.round((total-vouchers)*100)/100;
+   records.push({id:(Date.now().toString(36)+Math.random().toString(36).slice(2,7)),date,shop,total,vouchers,cash,created:Date.now()});
+   save();$('month').value=date.slice(0,7);$('shop').value='';$('total').value='';$('vouchers').value='0';updateRemaining();
+   $('message').textContent=`Scontrino salvato. Pagato in euro: ${fmt(cash)}.`;render();
+ });
+ $('export').addEventListener('click',()=>{
+   const rows=[['Data','Negozio','Totale scontrino EUR','Buoni pasto EUR','Pagato in euro']];
+   records.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>rows.push([r.date,r.shop,r.total.toFixed(2),r.vouchers.toFixed(2),r.cash.toFixed(2)]));
+   const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
+   download(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),'i-miei-scontrini.csv');
+ });
+ $('backup').addEventListener('click',()=>download(new Blob([JSON.stringify(records,null,2)],{type:'application/json'}),'backup-scontrini.json'));
+ $('restoreBtn').addEventListener('click',()=>$('restore').click());
+ $('restore').addEventListener('change',async e=>{
+   const file=e.target.files[0];if(!file)return;
+   try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||!data.every(r=>r.date&&Number.isFinite(r.total)&&Number.isFinite(r.vouchers)&&Number.isFinite(r.cash)))throw Error();
+     if(confirm('Il ripristino sostituirà gli scontrini presenti. Continuare?')){records=data;save();render();$('message').textContent='Backup ripristinato.';}
+   }catch(err){alert('File di backup non valido.');}finally{e.target.value='';}
+ });
+ function download(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+ render();updateRemaining();renderComparison();
+})();
+</script>
+</body>
+</html>

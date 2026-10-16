@@ -1,0 +1,11 @@
+I MIEI SCONTRINI — prototipo aggiornato
+
+Funzioni:
+- Inserimento manuale data, negozio facoltativo, totale e buoni pasto.
+- Calcolo automatico dell'importo pagato in euro.
+- Statistiche mensili.
+- Confronto tra due mesi qualsiasi, anche di anni diversi, con differenza in euro e percentuale.
+- Storico, esportazione CSV e backup/ripristino JSON.
+
+Aprire index.html in un browser per provare. Per aggiungere l'app alla schermata Home dell'iPhone in modo affidabile, pubblicare la pagina su HTTPS e poi usare Safari > Condividi > Aggiungi alla schermata Home.
+I dati sono salvati nel browser locale: esportare backup periodici.
