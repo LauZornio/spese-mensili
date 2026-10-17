@@ -98,14 +98,38 @@ button{border:0;border-radius:12px;padding:13px 15px;font-weight:700;cursor:poin
       <button class="secondary" id="restoreBtn">Ripristina backup</button>
       <input id="restore" type="file" accept="application/json,.json" hidden>
     </div>
-    <p class="subtle">I dati vengono salvati in questo browser sul dispositivo. Esporta periodicamente un backup per non rischiare di perderli.</p>
+    <p class="subtle">Gli scontrini vengono salvati su questo dispositivo e inviati anche al foglio Google collegato. Il primo invio va verificato aprendo il foglio “Spese Mensili – Archivio”. Conserva comunque un backup periodico.</p>
   </section>
 </main>
 <script>
 (() => {
  const $ = id => document.getElementById(id);
  const key = 'mieiScontrini.v1';
+ const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyv8w0EfW6sKZcMZSmcAmjP5QsziKvffhY1rq-DmmaPZEdpe1o8dMqDKukEPCaCLyZP/exec';
  const fmt = n => new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n || 0);
+ async function sendToGoogleSheets(record){
+   const params = new URLSearchParams({
+     date: record.date,
+     shop: record.shop || '',
+     total: String(record.total),
+     vouchers: String(record.vouchers),
+     cash: String(record.cash)
+   });
+   // Apps Script is on a different domain: no-cors lets the form-style POST be sent,
+   // but the browser cannot read the server response to confirm that the row was added.
+   try {
+     await fetch(GOOGLE_SHEETS_URL, {
+       method: 'POST',
+       mode: 'no-cors',
+       headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+       body: params.toString()
+     });
+     return true;
+   } catch (error) {
+     return false;
+   }
+ }
+
  const today = new Date();
  const isoDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
  $('date').value = isoDate(today);
@@ -205,9 +229,12 @@ button{border:0;border-radius:12px;padding:13px 15px;font-weight:700;cursor:poin
    if($('total').value===''||total<0){$('message').textContent='Inserisci un totale valido.';return;}
    if(vouchers<0||vouchers>total){$('message').textContent='I buoni non possono superare il totale dello scontrino.';return;}
    const cash=Math.round((total-vouchers)*100)/100;
-   records.push({id:(Date.now().toString(36)+Math.random().toString(36).slice(2,7)),date,shop,total,vouchers,cash,created:Date.now()});
-   save();$('month').value=date.slice(0,7);$('shop').value='';$('total').value='';$('vouchers').value='0';updateRemaining();
-   $('message').textContent=`Scontrino salvato. Pagato in euro: ${fmt(cash)}.`;render();
+   const record={id:(Date.now().toString(36)+Math.random().toString(36).slice(2,7)),date,shop,total,vouchers,cash,created:Date.now()};
+   records.push(record);
+   save();
+   sendToGoogleSheets(record);
+   $('month').value=date.slice(0,7);$('shop').value='';$('total').value='';$('vouchers').value='0';updateRemaining();
+   $('message').textContent=`Scontrino salvato sul dispositivo. Invio al foglio Google avviato. Pagato in euro: ${fmt(cash)}.`;render();
  });
  $('export').addEventListener('click',()=>{
    const rows=[['Data','Negozio','Totale scontrino EUR','Buoni pasto EUR','Pagato in euro']];
